@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <SDL/SDL.h>
+#include <SDL/SDL_mixer.h>
 #include <unistd.h>
 #include <math.h>
 #include <time.h>
@@ -15,7 +16,7 @@
 #define PADRAO 100
 //experimentar valores
 #define AumentoAngulo_RodaGigante 1
-#define AumentoAngulo_Carrossel 0,05
+#define AumentoAngulo_Carrossel 1
 #define AnguloEntreCarrinhos M_PI/4
 
 #define LARGURA_DO_MUNDO 1920
@@ -31,12 +32,17 @@ coordenadas base_gigante;
 coordenadas chao;
 coordenadas pedra1Pos;
 coordenadas base_barco;
+coordenadas base_carrossel;
 
 float Angulo_RodaGigante = 0;
 float Angulo_Carrossel = 0;
+float Angulo_Barco = 0;
+int Angulo_BarcoIndice = 0;
 
 int camera_posicao=1;
 int brinquedo=1;
+
+int volume_musica=10;
 
 int light_on=1;
 
@@ -76,9 +82,9 @@ typedef struct vetor_r3{
 } vetor_r3;
 
 GLMmodel *RodaGigante_base,*RodaGigante_roda,*RodaGigante_carrinho,
-*Carrossel_estrutura,*Carrossel_giragira,
+*Carrossel_base,*Carrossel_gira,
 *BarcoViking_base,*BarcoViking_barco,*chaoObj,
-*pedra1;
+*pedra1,*fonte;
 
 void desenhaChao(GLMmodel* objeto, coordenadas coordenada){
     if(!objeto)
@@ -87,15 +93,33 @@ void desenhaChao(GLMmodel* objeto, coordenadas coordenada){
     glmUnitize(objeto);
     glmFacetNormals(objeto);
     glmVertexNormals(objeto, 90.0, 1);
-
     glPushMatrix();
-        glTranslatef(coordenada.x, coordenada.y, coordenada.z);
-        glScalef(30,1,30);
-        glmDraw(objeto, GLM_SMOOTH | GLM_TEXTURE | GLM_COLOR);
+    glScalef(5,1,5);
+    glTranslatef(coordenada.x, coordenada.y, coordenada.z);
+    for(int i=0;i<9;i++)
+    {
+        glPushMatrix();
+        if(i<3)
+        {
+            glTranslatef(-2+i*2,0,0);
+            glmDraw(objeto, GLM_SMOOTH | GLM_TEXTURE | GLM_COLOR);
+        }
+        else if(i<6)
+        {
+            glTranslatef(-2+i%3*2,0,1.8);
+            glmDraw(objeto, GLM_SMOOTH | GLM_TEXTURE | GLM_COLOR);
+        }
+        else if(i<9)
+        {
+            glTranslatef(-2+i%3*2,0,-1.8);
+            glmDraw(objeto, GLM_SMOOTH | GLM_TEXTURE | GLM_COLOR);
+        }
+        glPopMatrix();
+    }
     glPopMatrix();
 }
 
-void desenhaObjeto(GLMmodel* objeto, coordenadas coordenada){
+void desenhaObjeto(GLMmodel* objeto){
     if(!objeto)
         exit(0);
     glmScale(objeto, 200.0);
@@ -104,10 +128,39 @@ void desenhaObjeto(GLMmodel* objeto, coordenadas coordenada){
     glmVertexNormals(objeto, 90.0, 1);
 
     glPushMatrix();
-    glTranslatef(coordenada.x, coordenada.y, coordenada.z);
     glScalef(1,1,1);
     glmDraw(objeto, GLM_SMOOTH | GLM_TEXTURE | GLM_COLOR);
     glPopMatrix();
+
+}
+
+void desenhaBarcoViking(GLMmodel* objeto1,GLMmodel* objeto2, coordenadas coordenada){
+
+    if(!objeto1)
+        exit(0);
+    if(!objeto2)
+        exit(0);
+    glmScale(objeto1, 200.0);
+    glmUnitize(objeto1);
+    glmFacetNormals(objeto1);
+    glmVertexNormals(objeto1, 90.0, 1);
+    glmScale(objeto2, 200.0);
+    glmUnitize(objeto2);
+    glmFacetNormals(objeto2);
+    glmVertexNormals(objeto2, 90.0, 1);
+
+    glPushMatrix();
+    glTranslatef(coordenada.x, coordenada.y, coordenada.z);
+    glScalef(1,1,1);
+    glmDraw(objeto1, GLM_SMOOTH | GLM_TEXTURE | GLM_COLOR);
+        glPushMatrix();
+            glScalef(0.7,0.7,0.7);
+            glTranslatef(0,0.25+0.3*abs(Angulo_Barco)/70,-0.9*sin(Angulo_Barco*M_PI/180));
+            glRotatef(Angulo_Barco,1,0,0);
+            glmDraw(objeto2,GLM_SMOOTH | GLM_TEXTURE | GLM_COLOR);
+        glPopMatrix();
+    glPopMatrix();
+
 
 }
 
@@ -161,6 +214,34 @@ void desenhaRodaGigante(GLMmodel* objeto1,GLMmodel* objeto2,GLMmodel* objeto3, c
     glPopMatrix();
 }
 
+void desenhaCarrossel(GLMmodel* objeto1,GLMmodel* objeto2, coordenadas coordenada){
+
+    if(!objeto1)
+        exit(0);
+    if(!objeto2)
+        exit(0);
+    glmScale(objeto1, 200.0);
+    glmUnitize(objeto1);
+    glmFacetNormals(objeto1);
+    glmVertexNormals(objeto1, 90.0, 1);
+    glmScale(objeto2, 200.0);
+    glmUnitize(objeto2);
+    glmFacetNormals(objeto2);
+    glmVertexNormals(objeto2, 90.0, 1);
+
+    glPushMatrix();
+        glTranslatef(coordenada.x, coordenada.y, coordenada.z);
+        glScalef(1,1,1);
+        glmDraw(objeto1, GLM_SMOOTH | GLM_TEXTURE | GLM_COLOR);
+        glPushMatrix();
+            glTranslatef(0,-0.2,0);
+            glRotatef(Angulo_Carrossel,0,-1,0);
+            glScalef(0.8,0.8,0.8);
+            glmDraw(objeto2, GLM_SMOOTH | GLM_TEXTURE | GLM_COLOR);
+        glPopMatrix();
+    glPopMatrix();
+
+}
 
 void redimensiona(int width, int height) {
 
@@ -170,18 +251,6 @@ void redimensiona(int width, int height) {
     glLoadIdentity();
     gluPerspective(90, ((float)width)/height, 0.5, 200);
     glMatrixMode(GL_MODELVIEW);
-}
-
-void PosicionarOBJ(){
-
-}
-
-void desenhaCarrossel(){
-
-}
-
-void desenhaBarcoViking(){
-
 }
 
 void desenha(){
@@ -194,20 +263,31 @@ void desenha(){
     else
         if(brinquedo==1)
             gluLookAt(2,2.5,0,0,1,0,0,1,0);
+        else if(brinquedo==2)
+            gluLookAt(3.5,2,0,5,1,0,0,1,0);
+        else if(brinquedo==3)
+            gluLookAt(3,1.5,1,3,0,3,0,1,0);
 
-    glColor3f(0.0,0.0,0.0);
+    glColor3f(1,1,1);
     desenhaChao(chaoObj,chao);
     desenhaRodaGigante(RodaGigante_base,RodaGigante_roda,RodaGigante_carrinho,"Roda_Gigante/base2.obj","Roda_Gigante/roda.obj","Roda_Gigante/carrinho2.obj",base_gigante);
     glPushMatrix();
-    glScalef(0.5,0.5,0.5);
-    desenhaObjeto(pedra1,pedra1Pos);
+        glScalef(0.5,0.5,0.5);
+        glTranslatef(1.8,0.5,3);
+        desenhaObjeto(pedra1);
     glPopMatrix();
     glPushMatrix();
-    desenhaObjeto(BarcoViking_base,base_barco);
+        desenhaBarcoViking(BarcoViking_base,BarcoViking_barco,base_barco);
     glPopMatrix();
-//    desenhaCarrossel();
-//    desenhaBarcoViking();
-
+    glPushMatrix();
+        glTranslatef(2.5,0.5,0);
+        glScalef(0.5,0.5,0.5);
+        glColor3f(0.8,0.8,0.8);
+        desenhaObjeto(fonte);
+    glPopMatrix();
+    glPushMatrix();
+        desenhaCarrossel(Carrossel_base,Carrossel_gira,base_carrossel);
+    glPopMatrix();
     glutSwapBuffers();
 }
 
@@ -217,7 +297,7 @@ void inicializa_posicoes(){
     base_gigante.y=0.9;
     base_gigante.z=0;
 
-    chao.x=-10;
+    chao.x=0;
     chao.y=0;
     chao.z=0;
 
@@ -225,13 +305,13 @@ void inicializa_posicoes(){
     camera.y=4;
     camera.z=0;
 
-    pedra1Pos.x=3;
-    pedra1Pos.y=0.5;
-    pedra1Pos.z=3;
-
     base_barco.x=5;
     base_barco.y=0.9;
     base_barco.z=0;
+
+    base_carrossel.x=3;
+    base_carrossel.y=0.9;
+    base_carrossel.z=3;
 
 }
 
@@ -241,7 +321,7 @@ void MovimentarCamera(){
     {
         if(w==1 && camera.x>-1)
             camera.x-=0.2;
-        if(s==1 && camera.x<19.8)
+        if(s==1 && camera.x<10)
             camera.x+=0.2;
         if(a==1)
             camera.z+=0.2;
@@ -261,6 +341,18 @@ void AcrescentarAngulos(){
     Angulo_Carrossel += AumentoAngulo_Carrossel;
     if(Angulo_Carrossel>360)
         Angulo_Carrossel-=360;
+
+    if(Angulo_BarcoIndice==0)
+        Angulo_Barco += 1;
+    else
+        Angulo_Barco -= 1;
+    if(Angulo_Barco>45)
+        Angulo_BarcoIndice=1;
+    if(Angulo_Barco<-45)
+        Angulo_BarcoIndice=0;
+
+
+
 }
 void atualizaCena(int periodo) {
 
@@ -271,20 +363,33 @@ void atualizaCena(int periodo) {
 
 }
 
+void iniciaMusica(){
+
+SDL_Init(SDL_INIT_AUDIO);
+    Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 4096);
+    Mix_VolumeMusic(10);
+    Mix_Music *music = Mix_LoadMUS("musica.mp3");
+    if(!music)
+        exit(0);
+    if(Mix_PlayMusic(music, -1)==-1)
+        printf("Mix_PlayMusic: %s\n", Mix_GetError());
+
+}
+
+
 void setup() {
     glClearColor(1, 1, 1, 1);
     // habilita o depth buffer para que a coordenada Z seja usada
     glEnable(GL_DEPTH_TEST);
 
-
-    Mix_PlayMusic(Mix_LoadMUS("musica.mp3"), 0);
+    iniciaMusica();
 
     float corFog[3] = {0.5,0.75,1};
     glEnable(GL_FOG);
     glFogfv(GL_FOG_COLOR, corFog);
     glFogi(GL_FOG_MODE, GL_LINEAR);
-    glFogf(GL_FOG_START, 16.0);
-    glFogf(GL_FOG_END, 30.0);
+    glFogf(GL_FOG_START, 5.0);
+    glFogf(GL_FOG_END, 15.0);
 
     // habilita anti-aliasing para desenhar as linhas de forma suave
     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
@@ -307,6 +412,10 @@ void setup() {
     chaoObj = glmReadOBJ("objetos/grama.obj");
     pedra1 = glmReadOBJ("objetos/Rock_10/Rock_10.obj");
     BarcoViking_base = glmReadOBJ("objetos/barcocorrigido/base.obj");
+    BarcoViking_barco = glmReadOBJ("objetos/barcocorrigido/barco.obj");
+    fonte = glmReadOBJ("objetos/fonte/fonte2.obj");
+    Carrossel_base = glmReadOBJ("objetos/carrosel/base.obj");
+    Carrossel_gira = glmReadOBJ("objetos/carrosel/gira.obj");
 
 }
 
@@ -375,6 +484,32 @@ void Solta(unsigned char key, int x, int y){
     }
 }
 
+void setas(int key, int x, int y){
+
+    switch(key){
+        case GLUT_KEY_LEFT:
+            brinquedo--;
+            if(brinquedo==0)
+                brinquedo=3;
+            break;
+        case GLUT_KEY_RIGHT:
+            brinquedo++;
+            if(brinquedo==4)
+                brinquedo=1;
+            break;
+        case GLUT_KEY_UP:
+            volume_musica+=5;
+            Mix_VolumeMusic(volume_musica);
+            break;
+        case GLUT_KEY_DOWN:
+            volume_musica-=5;
+            Mix_VolumeMusic(volume_musica);
+            break;
+
+    }
+
+}
+
 void movimentoMouse(int x, int y) {
 
 }
@@ -386,12 +521,12 @@ void click(int botao, int estado, int x, int y){
 void main(int argc, char** argv){
 
     glutInit(&argc, argv);
-    SDL_Init(SDL_INIT_AUDIO);
     glutInitContextVersion(1,1);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
     glutInitWindowSize(1600,900);
     glutInitWindowPosition (0, 0);
     glutCreateWindow("Zoopark");
+
 
     glutEnterGameMode();
 
@@ -403,6 +538,7 @@ void main(int argc, char** argv){
     glutKeyboardUpFunc(Solta);
     glutPassiveMotionFunc(movimentoMouse);
     glutMouseFunc(click);
+    glutSpecialFunc(setas);
 
     glutTimerFunc(0,atualizaCena,33);
 

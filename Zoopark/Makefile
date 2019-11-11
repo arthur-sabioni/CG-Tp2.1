@@ -1,5 +1,5 @@
 CC=gcc
-OPCOES_COMPILADOR=-I. -lglut -lGLU -lGLEW -lGL -lSOIL -lm -lSDL -lSDL_mixer
+OPCOES_COMPILADOR=-I. -lglut -lGLU -lGLEW -lGL -lSOIL -lSDL -lSDL_mixer -lm
 TODOS_ARQUIVOS_PONTOH =
 TODOS_ARQUIVOS_OBJ = main.o glm.o glmimg.o glm_util.o
 %.o: ../src/%.c $(TODOS_ARQUIVOS_PONTOH)
