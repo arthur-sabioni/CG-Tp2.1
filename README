@@ -1,0 +1,29 @@
+###############################################################
+
+	Para executar o jogo, abra a pasta BitPark, abra o terminal
+nela e digite "make run".
+
+###############################################################
+
+Teclas:
+
+1: câmera móvel, movimemte com W,A,S,D e Q,E.
+2: câmeras fixas, troque de cameras com as setas para os lados.
+L: liga e desliga a iluminação.
+Setas Cima e Baixo: alteram volume da música
+
+###############################################################
+
+O que foi implementado:
+
+-Quesitos básicos de pontuação.
+-Texturas no chão.
+-Modelos .obj modelados por nós.
+-Mais de 6 objetos no cenário.
+-Parque temático (voxel).
+-Dia/Noite.
+-Fog.
+-Os 3 brinquedos funcionais.
+-Música.
+
+###############################################################

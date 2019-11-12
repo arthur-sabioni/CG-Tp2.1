@@ -1,0 +1,12 @@
+# Blender MTL File: 'carrinho2.blend'
+# Material Count: 1
+
+newmtl Material
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.269728 0.011983 0.434426
+Ks 0.229508 0.004668 0.080021
+Ke 0.484288 0.021514 0.780000
+Ni 1.000000
+d 1.000000
+illum 2
