@@ -45,13 +45,22 @@ int brinquedo=1;
 int volume_musica=10;
 
 int light_on=1;
+//azul padrão inicial
+float R=0.5;
+float G=0.75;
+float B=1;
+//se aumenta ou diminui
+int virando_ciclo=0;
+float light_indice=0.01;
 
-int w=0,a=0,s=0,d=0;
+int w=0,a=0,s=0,d=0,e=0,q=0;
+
+int tempo_ciclo=0;
 
 // configura alguns parâmetros do modelo de iluminação: FONTE DE LUZ
-const GLfloat light_ambient[]  = { 0.5f, 0.5f, 0.5f, 1.0f };
-const GLfloat light_diffuse[]  = { 0.5f, 0.5f, 0.5f, 1.0f };
-const GLfloat light_specular[] = { 0.5f, 0.5f, 0.5f, 1.0f };
+const GLfloat light_ambient[]  = { 0.5f,0.5f,0.5f, 1.0f };
+const GLfloat light_diffuse[]  = { 0.5f,0.5f,0.5f, 1.0f };
+const GLfloat light_specular[] = { 0.5f,0.5f,0.5f, 1.0f };
 const GLfloat light_position[] = { 2.0f, 5.0f, 5.0f, 0.0f };
 // configura alguns parâmetros do modelo de iluminação: MATERIAL
 const GLfloat mat_ambient[]    = { 0.7f, 0.7f, 0.7f, 1.0f };
@@ -84,7 +93,7 @@ typedef struct vetor_r3{
 GLMmodel *RodaGigante_base,*RodaGigante_roda,*RodaGigante_carrinho,
 *Carrossel_base,*Carrossel_gira,
 *BarcoViking_base,*BarcoViking_barco,*chaoObj,
-*pedra1,*fonte;
+*pedra1,*fonte, *arvore, *banco, *caminho;
 
 void desenhaChao(GLMmodel* objeto, coordenadas coordenada){
     if(!objeto)
@@ -256,7 +265,7 @@ void redimensiona(int width, int height) {
 void desenha(){
 
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-    glClearColor(0.5, 0.75, 1, 1);
+    glClearColor(R, G, B, 1);
     glLoadIdentity();
     if(camera_posicao==1)
         gluLookAt( camera.x, camera.y, camera.z, camera.x-4, 0, camera.z, 0, 1, 0); //geral
@@ -266,7 +275,7 @@ void desenha(){
         else if(brinquedo==2)
             gluLookAt(3.5,2,0,5,1,0,0,1,0);
         else if(brinquedo==3)
-            gluLookAt(3,1.5,1,3,0,3,0,1,0);
+            gluLookAt(2.5,1.2,1,2.5,0,3,0,1,0);
 
     glColor3f(1,1,1);
     desenhaChao(chaoObj,chao);
@@ -286,9 +295,36 @@ void desenha(){
         desenhaObjeto(fonte);
     glPopMatrix();
     glPushMatrix();
+        glScalef(0.7,0.7,0.7);
         desenhaCarrossel(Carrossel_base,Carrossel_gira,base_carrossel);
     glPopMatrix();
+    glPushMatrix();
+        glScalef(0.5,0.5,0.5);
+        glTranslatef(0,1,-3);
+        desenhaObjeto(arvore);
+    glPopMatrix();
+    glPushMatrix();
+        glScalef(0.3,0.3,0.3);
+        glTranslatef(8.5,1,-2);
+        desenhaObjeto(banco);
+        glRotatef(180,0,1,0);
+        glTranslatef(0,0,-4);
+        desenhaObjeto(banco);
+        glRotatef(90,0,1,0);
+        glTranslatef(-2,0,-2);
+        desenhaObjeto(banco);
+        glRotatef(180,0,1,0);
+        glTranslatef(0,0,-4);
+        desenhaObjeto(banco);
+    glPopMatrix();
+    glPushMatrix();
+        glTranslatef(2.5,0.1,1.1);
+        glRotatef(90,0,1,0);
+        glScalef(2.8,1,2.8);
+        desenhaObjeto(caminho);
+    glPopMatrix();
     glutSwapBuffers();
+
 }
 
 void inicializa_posicoes(){
@@ -309,9 +345,9 @@ void inicializa_posicoes(){
     base_barco.y=0.9;
     base_barco.z=0;
 
-    base_carrossel.x=3;
+    base_carrossel.x=3.58;
     base_carrossel.y=0.9;
-    base_carrossel.z=3;
+    base_carrossel.z=4;
 
 }
 
@@ -327,6 +363,12 @@ void MovimentarCamera(){
             camera.z+=0.2;
         if(d==1)
             camera.z-=0.2;
+        if(e==1)
+            camera.y+=0.2;
+        if(q==1 && camera.y>0.8)
+        {
+            camera.y-=0.2;
+        }
     }
 
 }
@@ -354,10 +396,43 @@ void AcrescentarAngulos(){
 
 
 }
+
+void AlteraCiclos(){
+
+    if(tempo_ciclo%300==0)
+        virando_ciclo=1;
+    if(virando_ciclo==1)
+    {
+        R-=light_indice;
+        G-=light_indice;
+        B-=light_indice;
+    }
+    if(B<0.1)
+    {
+        light_indice=-0.01;
+        virando_ciclo=0;
+    }
+    if(B>1.0)
+    {
+        light_indice=0.01;
+        virando_ciclo=0;
+    }
+    printf("%f %f\n",R,G);
+    float corFog[3] = { R,G,B, 1.0f };
+    glFogfv(GL_FOG_COLOR, corFog);
+
+}
+
+
+
 void atualizaCena(int periodo) {
 
+    tempo_ciclo++;
+    if(tempo_ciclo==1000)
+        tempo_ciclo=0;
     MovimentarCamera();
     AcrescentarAngulos();
+    AlteraCiclos();
     glutPostRedisplay();
     glutTimerFunc(periodo, atualizaCena, periodo);
 
@@ -384,7 +459,7 @@ void setup() {
 
     iniciaMusica();
 
-    float corFog[3] = {0.5,0.75,1};
+    float corFog[3] = { R,G,B, 1.0f };
     glEnable(GL_FOG);
     glFogfv(GL_FOG_COLOR, corFog);
     glFogi(GL_FOG_MODE, GL_LINEAR);
@@ -416,6 +491,9 @@ void setup() {
     fonte = glmReadOBJ("objetos/fonte/fonte2.obj");
     Carrossel_base = glmReadOBJ("objetos/carrosel/base.obj");
     Carrossel_gira = glmReadOBJ("objetos/carrosel/gira.obj");
+    arvore = glmReadOBJ("objetos/tree.obj");
+    banco = glmReadOBJ("objetos/bench.obj");
+    caminho = glmReadOBJ("objetos/caminho.obj");
 
 }
 
@@ -439,6 +517,14 @@ void Apertada(unsigned char key, int x, int y){
         case 'd':
         case 'D':
             d=1;
+            break;
+        case 'e':
+        case 'E':
+            e=1;
+            break;
+        case 'q':
+        case 'Q':
+            q=1;
             break;
         case 'l':
         case 'L':
@@ -481,6 +567,14 @@ void Solta(unsigned char key, int x, int y){
         case 'D':
             d=0;
             break;
+        case 'e':
+        case 'E':
+            e=0;
+            break;
+        case 'q':
+        case 'Q':
+            q=0;
+            break;
     }
 }
 
@@ -498,11 +592,13 @@ void setas(int key, int x, int y){
                 brinquedo=1;
             break;
         case GLUT_KEY_UP:
-            volume_musica+=5;
+            if(volume_musica<100)
+                volume_musica+=5;
             Mix_VolumeMusic(volume_musica);
             break;
         case GLUT_KEY_DOWN:
-            volume_musica-=5;
+            if(volume_musica>0)
+                volume_musica-=5;
             Mix_VolumeMusic(volume_musica);
             break;
 

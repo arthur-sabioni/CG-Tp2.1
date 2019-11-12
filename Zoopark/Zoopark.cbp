@@ -44,6 +44,9 @@
 			<Add library="glut" />
 			<Add library="SOIL" />
 		</Linker>
+		<Unit filename="../../CodeBlocks/Lista CG">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
 		<Unit filename="glm.c">
 			<Option compilerVar="CC" />
 			<Option target="&lt;{~None~}&gt;" />
